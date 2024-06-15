@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  Alert,
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +19,6 @@ export default function App() {
   const [todos, setTodos] = useState([]);
 
   const saveTodos = async saveTodo => {
-    console.log('savetodo', saveTodo);
     try {
       //* AsyncStorage ekleme yaparken setItem metodu ile ekleme yaparız.
       //* Bizden iki değer:
@@ -54,7 +54,7 @@ export default function App() {
 
       */
       const storedData = await AsyncStorage.getItem('todos');
-      console.log('storedData', storedData);
+
       if (storedData) {
         setTodos(JSON.parse(storedData));
       }
@@ -66,11 +66,35 @@ export default function App() {
   const deleteTodo = async id => {
     //* Bastığımız elemanın idsi ile dizi içerisindeki idlerden eşleşmeyenleri çıkar ve bize dizi olarak dönder
     const updatedTodo = todos?.filter(x => x.id !== id);
-    console.log(updatedTodo);
+
     //* Statei güncelle
     setTodos(updatedTodo);
     //* AsyncStorega güncelle
     saveTodos(updatedTodo);
+  };
+
+  const updateTodos = id => {
+    //* idsini bildiğimiz elemanı todos dizisi içerisinde bulmak için find methodu kullandık.
+    const exitingTodo = todos?.find(x => x.id === id);
+    //* idli eleman dizide yoksa fonksiyonu durdur
+    if (!exitingTodo) return;
+
+    Alert.prompt(
+      'Edit Todo', // Kullanıcıya gösterilecek başlık
+      'Update', // Kullanıcın güncellem yapması için buton üzerinde yazan metindir
+      // Kullanıcının giriş yaptığı metni işleyen fonksiyondur
+      newUpdateText => {
+        if (newUpdateText) {
+          const updatedTodos = todos.map(item =>
+            item?.id === id ? {...item, text: newUpdateText} : item,
+          );
+          setTodos(updatedTodos); //* todos statei güncellendi
+          saveTodos(updatedTodos); //* asyncstorage güncellendir
+        }
+      },
+      'plain-text', // Kullanıcının sadece düz metin girişi yapabileceğini belirtir.
+      exitingTodo.text, // Kullanıcıya başlangıçta gösterilecek mevcut metindir.
+    );
   };
 
   useEffect(() => {
@@ -112,6 +136,7 @@ export default function App() {
                 </View>
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
+                    onPress={() => updateTodos(item?.id)}
                     style={[styles.button, styles.updateButton]}>
                     <Text style={styles.buttonText}>Update</Text>
                   </TouchableOpacity>
